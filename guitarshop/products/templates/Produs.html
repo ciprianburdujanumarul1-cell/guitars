@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ product.name }} — GuitarShop</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+body {
+  background: #0a0a0a;
+  color: #f0ece3;
+  font-family: 'Barlow Condensed', sans-serif;
+  margin: 0;
+}
+
+nav {
+  position: sticky;
+  top: 0;
+  background: rgba(10,10,10,0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #222;
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 40px;
+}
+
+.nav-brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+}
+.nav-brand span { color: #e85d04; }
+
+.container {
+  display: flex;
+  max-width: 1100px;
+  margin: 50px auto;
+  gap: 40px;
+  padding: 0 20px;
+  flex-wrap: wrap;
+}
+
+.product-image img {
+  width: 100%;
+  max-width: 450px;
+  border-radius: 10px;
+}
+
+.product-info { flex: 1; }
+
+.product-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 40px;
+}
+
+.price {
+  font-size: 26px;
+  color: #e85d04;
+  margin: 15px 0;
+}
+
+.description {
+  color: #aaa;
+  margin: 20px 0;
+}
+
+button {
+  background: none;
+  border: 1px solid #e85d04;
+  color: #e85d04;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #e85d04;
+  color: white;
+}
+
+/* ── REVIEWS ── */
+.reviews-section {
+  width: 100%;
+  margin-top: 20px;
+  border-top: 1px solid #222;
+  padding-top: 40px;
+}
+
+.reviews-section h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 1px;
+  margin: 0 0 24px;
+}
+
+.reviews-section h2 span { color: #e85d04; }
+
+.review-form {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.review-form input[type="text"] {
+  flex: 1;
+  background: #111;
+  border: 1px solid #333;
+  color: #f0ece3;
+  padding: 12px 16px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.review-form input[type="text"]:focus {
+  border-color: #e85d04;
+}
+
+.review-form button {
+  white-space: nowrap;
+  padding: 12px 24px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+}
+
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-card {
+  background: #111;
+  border: 1px solid #222;
+  border-left: 3px solid #e85d04;
+  padding: 14px 18px;
+  border-radius: 0 6px 6px 0;
+  animation: fadeIn 0.3s ease;
+}
+
+.review-card .review-meta {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.review-card p {
+  margin: 0;
+  color: #d0ccc5;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.no-reviews {
+  color: #444;
+  font-size: 15px;
+  font-style: italic;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+  <div class="nav-brand">🎸 Guitar<span>Shop</span></div>
+</nav>
+
+<div class="container">
+  
+  <div class="product-image">
+    {% if product.image %}
+      <img src="{{ product.image.url }}" alt="{{ product.name }}">
+    {% else %}
+      <img src="https://via.placeholder.com/450x400" alt="No image">
+    {% endif %}
+  </div>
+
+  <div class="product-info">
+    <div class="product-name">{{ product.name }}</div>
+    <div class="price">{{ product.price }} €</div>
+    <div class="description">
+      <span>
+        Body | {{ product.body }}<br>
+        Neck | {{ product.neck }}<br>
+        Grip Shape | {{ product.grip_shape }}<br>
+        Fingerboard | {{ product.fingerboard }}<br>
+        Fret | {{ product.fret }}<br>
+        Inlay | {{ product.inlay }}<br>
+        Scale | {{ product.scale }}<br>
+        Nut | {{ product.nut }}<br>
+        Construction | {{ product.construction }}<br>
+        Tuner | {{ product.tuner }}<br>
+        Bridge | {{ product.bridge }}<br>
+        Pickup | {{ product.pickup }}<br>
+        Controls | {{ product.controls }}<br>
+        Color | {{ product.color }}
+      </span>
+    </div>
+    {% if product.is_in_stock %}
+
+      <form method="POST" action="{% url 'add_to_cart' product.id %}">
+        {% csrf_token %}
+        <button type="submit">Add to Cart</button>
+      </form>
+
+      
+
+      {% else %}
+
+      <p style="color:red;">Out of stock</p>
+
+      <button disabled>Add to Cart</button>
+
+
+    {% endif %}
+
+  <!-- REVIEWS -->
+  <div class="reviews-section">
+    <h2>Re<span>views</span></h2>
+
+    <form class="review-form" id="form">
+      <input type="text" name="message" placeholder="Leave a review…" autocomplete="off" />
+      <button type="submit">Post Review</button>
+    </form>
+
+    <div class="messages-list" id="messages">
+      <p class="no-reviews" id="empty-msg">No reviews yet. Be the first!</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const url = `ws://${window.location.host}/ws/socket-server/{{ product.id }}/`;
+  const chatSocket = new WebSocket(url);
+
+
+  chatSocket.onmessage = function(e) {
+    console.log('RAW primit:', e.data);  // <-- asta ne arată exact ce vine
+    const data = JSON.parse(e.data);
+    console.log('DATA:', data);
+    console.log('USERNAME:', data.username);
+
+    if (data.type === 'chat') {
+      const emptyMsg = document.getElementById('empty-msg');
+      if (emptyMsg) emptyMsg.remove();
+
+      const messages = document.getElementById('messages');
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const username = data.username || 'Anonymous';
+
+      messages.insertAdjacentHTML('beforeend', `
+        <div class="review-card">
+          <div class="review-meta">${data.username} · ${now}</div>
+          <p>${data.message}</p>
+        </div>
+      `);
+    }
+  };
+
+  const form = document.getElementById('form');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const message = e.target.message.value.trim();
+    if (!message) return;
+    chatSocket.send(JSON.stringify({ message }));
+    form.reset();
+  });
+</script>
+
+</body>
+</html>
