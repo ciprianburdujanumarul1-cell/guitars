@@ -68,7 +68,9 @@ button:hover { background: #e85d04; color: white; }
 <body>
 
 <nav>
-  <div class="nav-brand">🎸 Guitar<span>Shop</span></div>
+  <a href="{% url 'home' %}" style="text-decoration:none; color:inherit;">
+    <div class="nav-brand">🎸 Guitar<span>Shop</span></div>
+  </a>
 </nav>
 
 <div class="container">
@@ -106,7 +108,7 @@ button:hover { background: #e85d04; color: white; }
         <div style="display:flex; align-items:center; gap:10px; margin: 6px 0;">
           <span>Quantity:</span>
 
-          <form method="POST" action="{% url 'update_cart' item.product.id %}">
+          <form method="POST" action="{% url 'cart:update_cart' item.product.id %}">
             {% csrf_token %}
             <input type="hidden" name="action" value="decrease">
             <button type="submit">−</button>
@@ -114,7 +116,7 @@ button:hover { background: #e85d04; color: white; }
 
           <span>{{ item.qty }}</span>
 
-          <form method="POST" action="{% url 'update_cart' item.product.id %}">
+          <form method="POST" action="{% url 'cart:update_cart' item.product.id %}">
             {% csrf_token %}
             <input type="hidden" name="action" value="increase">
             <button type="submit">+</button>
@@ -123,7 +125,7 @@ button:hover { background: #e85d04; color: white; }
 
         <div style="color:#888;">Line total: {{ item.line_total }} €</div>
 
-        <form method="POST" action="{% url 'remove_from_cart' item.product.id %}">
+        <form method="POST" action="{% url 'cart:remove_from_cart' item.product.id %}">
           {% csrf_token %}
           <button type="submit">Remove</button>
         </form>

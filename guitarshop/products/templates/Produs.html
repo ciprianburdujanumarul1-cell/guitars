@@ -172,7 +172,9 @@ button:hover {
 <body>
 
 <nav>
-  <div class="nav-brand">🎸 Guitar<span>Shop</span></div>
+  <a href="{% url 'home' %}" style="text-decoration:none; color:inherit;">
+    <div class="nav-brand">🎸 Guitar<span>Shop</span></div>
+  </a>
 </nav>
 
 <div class="container">
@@ -208,14 +210,14 @@ button:hover {
     </div>
     {% if product.is_in_stock %}
 
-      <form method="POST" action="{% url 'add_to_cart' product.id %}">
+      <form method="POST" action="{% url 'cart:add_to_cart' product.id %}">
         {% csrf_token %}
         <button type="submit">Add to Cart</button>
       </form>
 
       
 
-      {% else %}
+    {% else %}
 
       <p style="color:red;">Out of stock</p>
 
@@ -223,7 +225,7 @@ button:hover {
 
 
     {% endif %}
-
+    </div>
   <!-- REVIEWS -->
   <div class="reviews-section">
     <h2>Re<span>views</span></h2>
