@@ -9,6 +9,8 @@ from django.http import JsonResponse
 from products.models import Product
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.views.decorators.clickjacking import xframe_options_deny
+
 
 
 logger = logging.getLogger(__name__)
@@ -193,10 +195,10 @@ def get_cart(request):
 
     return JsonResponse({'items': items, 'total': float(total), 'cart_count': sum(cart.values())})
 
-
+@xframe_options_deny
 def cancel(request):
     return render(request, "cancel.html")
-
+@xframe_options_deny
 def success(request):
     cart = request.session.get('cart', {})
     

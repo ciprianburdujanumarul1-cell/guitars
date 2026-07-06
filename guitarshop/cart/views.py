@@ -4,7 +4,9 @@ from products.models import Product
 from decimal import Decimal
 from django.db import transaction
 from django.contrib import messages
+from django.views.decorators.clickjacking import xframe_options_deny
 
+@xframe_options_deny
 def cart_detail(request):
 
     cart = request.session.get('cart', {})
@@ -58,6 +60,7 @@ def remove_from_cart(request, product_id):
     request.session['cart'] = cart
     return redirect('cart:cart_detail')
 @transaction.atomic
+@xframe_options_deny
 def checkout(request):
     cart = request.session.get('cart', {})
     print("CHECKOUT CART:", cart)

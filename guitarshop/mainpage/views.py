@@ -3,11 +3,15 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from .models import Userdetail
 
+from django.views.decorators.clickjacking import xframe_options_deny
+
 
 
 # Create your views here.
+@xframe_options_deny
 def home(request):
     return render(request, "index.html")
+@xframe_options_deny
 def s(request):
     if request.method == "POST":
         username = request.POST["username"]
@@ -44,7 +48,7 @@ def s(request):
 
     return render(request, "signin.html")
 # view pentru pagina login
-
+@xframe_options_deny
 def l(request):
     if request.method == "POST":
         email = request.POST["email"]
