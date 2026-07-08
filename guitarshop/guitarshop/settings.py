@@ -134,3 +134,5 @@ LOGIN_URL = '/login/'
 
 STATIC_URL = '/static/'
 SESSION_SAVE_EVERY_REQUEST = True
+
+

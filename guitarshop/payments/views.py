@@ -200,6 +200,7 @@ def cancel(request):
     return render(request, "cancel.html")
 @xframe_options_deny
 def success(request):
+    
     cart = request.session.get('cart', {})
     
     total_amount = 0
@@ -220,5 +221,6 @@ def success(request):
     request.session['last_payment_amount'] = total_amount
     request.session.pop('cart', None)
     request.session.modified = True
-
+    
     return render(request, "success.html", {'total_amount': total_amount})
+
