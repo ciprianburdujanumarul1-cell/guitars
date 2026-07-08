@@ -22,7 +22,9 @@ nav {
   border-bottom: 1px solid #222;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 15px 40px;
+  z-index: 100;
 }
 
 .nav-brand {
@@ -30,6 +32,90 @@ nav {
   font-size: 24px;
 }
 .nav-brand span { color: #e85d04; }
+
+/* ── CART ICON ── */
+.cart-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #333;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.cart-icon-wrap:hover {
+  border-color: #e85d04;
+}
+
+.cart-icon-wrap svg {
+  width: 20px;
+  height: 20px;
+  stroke: #f0ece3;
+  fill: none;
+  stroke-width: 1.8;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #e85d04;
+  color: #0a0a0a;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  font-family: 'Barlow Condensed', sans-serif;
+  transform: scale(1);
+  transition: transform 0.2s ease;
+}
+
+.cart-badge.hidden {
+  display: none;
+}
+
+.cart-badge.pop {
+  animation: badgePop 0.35s ease;
+}
+
+@keyframes badgePop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.5); }
+  100% { transform: scale(1); }
+}
+
+.cart-icon-wrap.shake {
+  animation: cartShake 0.4s ease;
+}
+
+@keyframes cartShake {
+  0%, 100% { transform: rotate(0deg); }
+  20%      { transform: rotate(-12deg); }
+  40%      { transform: rotate(10deg); }
+  60%      { transform: rotate(-8deg); }
+  80%      { transform: rotate(6deg); }
+}
+
+/* flying dot that travels from the button to the cart icon */
+.fly-dot {
+  position: fixed;
+  width: 14px;
+  height: 14px;
+  background: #e85d04;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 999;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease;
+}
 
 .container {
   display: flex;
@@ -75,6 +161,15 @@ button {
 }
 
 button:hover {
+  background: #e85d04;
+  color: white;
+}
+
+#add-to-cart-btn {
+  position: relative;
+}
+
+#add-to-cart-btn.added {
   background: #e85d04;
   color: white;
 }
@@ -175,6 +270,15 @@ button:hover {
   <a href="{% url 'home' %}" style="text-decoration:none; color:inherit;">
     <div class="nav-brand">🎸 Guitar<span>Shop</span></div>
   </a>
+
+  <a href="{% url 'cart:cart_detail' %}" style="text-decoration:none;">
+    <div class="cart-icon-wrap" id="cart-icon">
+      <svg viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l3-8H5.4M7 13L5.4 5M7 13l-1.5 6h11.5M9 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z"/>
+      </svg>
+      <span class="cart-badge {% if not cart_count %}hidden{% endif %}" id="cart-count">{{ cart_count|default:0 }}</span>
+    </div>
+  </a>
 </nav>
 
 <div class="container">
@@ -210,9 +314,9 @@ button:hover {
     </div>
     {% if product.is_in_stock %}
 
-      <form method="POST" action="{% url 'cart:add_to_cart' product.id %}">
+      <form method="POST" action="{% url 'cart:add_to_cart' product.id %}" id="add-to-cart-form">
         {% csrf_token %}
-        <button type="submit">Add to Cart</button>
+        <button type="submit" id="add-to-cart-btn">Add to Cart</button>
       </form>
 
       
@@ -278,6 +382,99 @@ button:hover {
     chatSocket.send(JSON.stringify({ message }));
     form.reset();
   });
+
+  // ── ADD TO CART: animation + live count ──
+  const cartForm = document.getElementById('add-to-cart-form');
+  const cartIcon = document.getElementById('cart-icon');
+  const cartCountEl = document.getElementById('cart-count');
+  const addBtn = document.getElementById('add-to-cart-btn');
+
+  function getCsrfToken(formEl) {
+    const input = formEl.querySelector('[name=csrfmiddlewaretoken]');
+    return input ? input.value : '';
+  }
+
+  function flyToCart(startEl) {
+    const startRect = startEl.getBoundingClientRect();
+    const endRect = cartIcon.getBoundingClientRect();
+
+    const dot = document.createElement('div');
+    dot.className = 'fly-dot';
+    dot.style.left = `${startRect.left + startRect.width / 2 - 7}px`;
+    dot.style.top = `${startRect.top + startRect.height / 2 - 7}px`;
+    document.body.appendChild(dot);
+
+    // force layout so the transition below actually animates
+    requestAnimationFrame(() => {
+      const dx = endRect.left + endRect.width / 2 - (startRect.left + startRect.width / 2);
+      const dy = endRect.top + endRect.height / 2 - (startRect.top + startRect.height / 2);
+      dot.style.transform = `translate(${dx}px, ${dy}px) scale(0.3)`;
+      dot.style.opacity = '0.2';
+    });
+
+    dot.addEventListener('transitionend', () => {
+      dot.remove();
+      bumpCart();
+    }, { once: true });
+  }
+
+  function bumpCart() {
+    cartIcon.classList.remove('shake');
+    void cartIcon.offsetWidth; // restart animation
+    cartIcon.classList.add('shake');
+
+    cartCountEl.classList.remove('hidden');
+    cartCountEl.classList.remove('pop');
+    void cartCountEl.offsetWidth;
+    cartCountEl.classList.add('pop');
+  }
+
+  if (cartForm) {
+    cartForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      addBtn.disabled = true;
+      addBtn.classList.add('added');
+      const originalLabel = addBtn.textContent;
+      addBtn.textContent = 'Added ✓';
+
+      flyToCart(addBtn);
+
+      try {
+        // add_to_cart redirects to cart:cart_detail on success, or back to
+        // products:product_detail if stock was insufficient. fetch follows
+        // the redirect for us — we check where it landed to know which happened.
+        const response = await fetch(cartForm.action, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCsrfToken(cartForm),
+          },
+          body: new FormData(cartForm),
+        });
+
+        const wentToCart = response.url.includes('/cart/');
+
+        if (wentToCart) {
+          const newCount = (parseInt(cartCountEl.textContent, 10) || 0) + 1;
+          cartCountEl.textContent = newCount;
+        } else {
+          // stock was insufficient — don't bump the cart, let the user know
+          addBtn.textContent = 'Out of stock';
+          addBtn.classList.remove('added');
+        }
+
+      } catch (err) {
+        console.error('Add to cart failed:', err);
+      } finally {
+        setTimeout(() => {
+          addBtn.disabled = false;
+          addBtn.classList.remove('added');
+          addBtn.textContent = originalLabel;
+        }, 900);
+      }
+    });
+  }
 </script>
 
 </body>
