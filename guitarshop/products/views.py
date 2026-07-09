@@ -1,12 +1,14 @@
-from django.shortcuts import render
-from django.contrib import admin
-from .models import Product
 from django.shortcuts import render, get_object_or_404
-admin.site.register(Product)
+from django.contrib import admin
 from django.contrib.auth.decorators import login_required
+from django.db.models import Avg
+from .models import Product, Review
+
+admin.site.register(Product)
+admin.site.register(Review)
+
 
 @login_required
-
 def products_view(request, brand):
 
     products = Product.objects.filter(brand=brand)
@@ -28,13 +30,17 @@ def products_view(request, brand):
         "query": query,
     })
 
+
 @login_required
 def product_detail(request, id):
     product = get_object_or_404(Product, id=id)
 
-    
+    reviews = product.reviews.order_by('-created_at')
+    avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']
 
     return render(request, "Produs.html", {
         "product": product,
-        
+        "reviews": reviews,
+        "avg_rating": round(avg_rating, 1) if avg_rating else None,
+        "review_count": reviews.count(),
     })

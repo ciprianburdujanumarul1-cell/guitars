@@ -15,26 +15,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        # Send existing reviews
-        reviews = await self.get_reviews()
-        for review in reviews:
-            await self.send(text_data=json.dumps({
-                "type": "chat",
-                "message": review.message,
-                "username": review.username,
-            }))
-
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
         data = json.loads(text_data)
         message = data['message']
+        rating = data.get('rating', 5)
+
+        try:
+            rating = int(rating)
+        except (TypeError, ValueError):
+            rating = 5
+        if rating < 1 or rating > 5:
+            rating = 5
 
         user = self.scope["user"]
         username = user.username if user.is_authenticated else "Anonymous"
 
-        await self.save_review(username, message)
+        await self.save_review(username, message, rating)
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -42,23 +41,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "type": "chat_message",
                 "message": message,
                 "username": username,
+                "rating": rating,
             }
         )
+
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({
             "type": "chat",
             "message": event["message"],
             "username": event["username"],
+            "rating": event["rating"],
         }))
 
     @database_sync_to_async
-    def get_reviews(self):
-        return list(Review.objects.filter(product_id=self.product_id).order_by('created_at'))
-
-    @database_sync_to_async
-    def save_review(self, username, message):
+    def save_review(self, username, message, rating):
         Review.objects.create(
             product_id=self.product_id,
             username=username,
-            message=message
+            message=message,
+            rating=rating,
         )
