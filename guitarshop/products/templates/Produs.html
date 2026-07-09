@@ -33,6 +33,70 @@ nav {
 }
 .nav-brand span { color: #e85d04; }
 
+/* ── NAV ICONS WRAPPER ── */
+.nav-icons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-favorites-link {
+  text-decoration: none;
+  color: #f0ece3;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: color 0.2s;
+}
+
+.nav-favorites-link:hover {
+  color: #e85d04;
+}
+
+/* ── HEART / WISHLIST ICON ── */
+.heart-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #333;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+  background: none;
+  padding: 0;
+}
+
+.heart-icon-wrap:hover {
+  border-color: #e85d04;
+}
+
+.heart-icon-wrap svg {
+  width: 20px;
+  height: 20px;
+  stroke: #f0ece3;
+  fill: none;
+  stroke-width: 1.8;
+  transition: fill 0.2s, stroke 0.2s;
+}
+
+.heart-icon-wrap.favorited svg {
+  fill: #e85d04;
+  stroke: #e85d04;
+}
+
+.heart-icon-wrap.pulse svg {
+  animation: heartPulse 0.35s ease;
+}
+
+@keyframes heartPulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
 /* ── CART ICON ── */
 .cart-icon-wrap {
   position: relative;
@@ -329,14 +393,24 @@ button:hover {
     <div class="nav-brand">🎸 Guitar<span>Shop</span></div>
   </a>
 
-  <a href="{% url 'cart:cart_detail' %}" style="text-decoration:none;">
-    <div class="cart-icon-wrap" id="cart-icon">
+  <div class="nav-icons">
+    <a href="{% url 'products:wishlist_view' %}" class="nav-favorites-link">My Favorites</a>
+
+    <button class="heart-icon-wrap {% if is_favorited %}favorited{% endif %}" id="heart-icon" type="button" aria-label="Add to wishlist">
       <svg viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l3-8H5.4M7 13L5.4 5M7 13l-1.5 6h11.5M9 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21s-7.5-4.6-10-9.3C.4 8.2 2.3 4.5 6 4c2-.3 3.8.8 6 3.1C14.2 4.8 16 3.7 18 4c3.7.5 5.6 4.2 4 7.7C19.5 16.4 12 21 12 21z"/>
       </svg>
-      <span class="cart-badge {% if not cart_count %}hidden{% endif %}" id="cart-count">{{ cart_count|default:0 }}</span>
-    </div>
-  </a>
+    </button>
+
+    <a href="{% url 'cart:cart_detail' %}" style="text-decoration:none;">
+      <div class="cart-icon-wrap" id="cart-icon">
+        <svg viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l3-8H5.4M7 13L5.4 5M7 13l-1.5 6h11.5M9 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z"/>
+        </svg>
+        <span class="cart-badge {% if not cart_count %}hidden{% endif %}" id="cart-count">{{ cart_count|default:0 }}</span>
+      </div>
+    </a>
+  </div>
 </nav>
 
 <div class="container">
@@ -477,6 +551,44 @@ button:hover {
     chatSocket.send(JSON.stringify({ message, rating }));
     form.reset();
   });
+
+  // ── CSRF helper (cookie-based, works regardless of which forms exist on the page) ──
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  }
+
+  // ── WISHLIST TOGGLE ──
+  const heartIcon = document.getElementById('heart-icon');
+
+  if (heartIcon) {
+    heartIcon.addEventListener('click', async () => {
+      heartIcon.disabled = true;
+
+      try {
+        const response = await fetch("{% url 'products:toggle_wishlist' product.id %}", {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken'),
+          },
+        });
+
+        const data = await response.json();
+
+        heartIcon.classList.toggle('favorited', data.favorited);
+        heartIcon.classList.remove('pulse');
+        void heartIcon.offsetWidth;
+        heartIcon.classList.add('pulse');
+
+      } catch (err) {
+        console.error('Wishlist toggle failed:', err);
+      } finally {
+        heartIcon.disabled = false;
+      }
+    });
+  }
 
   // ── ADD TO CART: animation + live count ──
   const cartForm = document.getElementById('add-to-cart-form');
